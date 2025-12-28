@@ -1,0 +1,695 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Full Stack Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* 基本样式设置 */
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      padding: 24px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      margin: 0;
+    }
+    
+    /* 聊天容器样式 */
+    .chat-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      display: flex;
+      padding: 20px;
+      gap: 20px;
+    }
+    
+    /* 聊天主内容区域 */
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* 聊天头部 */
+    .chat-header {
+      padding: 15px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+      border-radius: 12px 12px 0 0;
+    }
+    
+    .chat-header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    
+    .chat-status {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 3px;
+    }
+    
+    /* 聊天记录区域 */
+    .chat-messages {
+      height: 500px;
+      overflow-y: auto;
+      padding: 15px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: white;
+    }
+    
+    /* 消息气泡通用样式 */
+    .message {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      max-width: 80%;
+    }
+    
+    /* 用户消息（右边） */
+    .message.user {
+      align-self: flex-end;
+    }
+    
+    /* 助手消息（左边） */
+    .message.assistant {
+      align-self: flex-start;
+    }
+    
+    /* 头像样式 */
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+      color: white;
+      flex-shrink: 0;
+    }
+    
+    .avatar.user {
+      background: linear-gradient(135deg, #81C784 0%, #4CAF50 100%);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      font-family: 'Arial Rounded MT Bold', sans-serif;
+    }
+    
+    .avatar.assistant {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    /* 消息内容 */
+    .message-content {
+      background: #f1f1f1;
+      padding: 12px 16px;
+      border-radius: 18px;
+      word-wrap: break-word;
+    }
+    
+    .message.user .message-content {
+      background: #e3f2fd;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .message.assistant .message-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-bottom-left-radius: 4px;
+    }
+    
+    /* 输入区域 */
+    .chat-input-area {
+      padding: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .chat-form {
+      display: flex;
+      gap: 10px;
+    }
+    
+    textarea {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      resize: none;
+      font-family: inherit;
+      font-size: 14px;
+      height: 60px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    
+    textarea:focus {
+      border-color: #667eea;
+    }
+    
+    button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: transform 0.2s;
+    }
+    
+    button:hover {
+      transform: translateY(-1px);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    /* 加载动画样式 */
+    .loading-container {
+      margin: 15px 0;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: white;
+      align-self: flex-end;
+      max-width: 80%;
+    }
+    
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      font-size: 14px;
+    }
+    
+    /* 错误信息 */
+    .error-message {
+      background: #ffebee;
+      color: #d32f2f;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 15px 0;
+      align-self: center;
+    }
+    
+    /* 日历区域 */
+    .calendar-container {
+      width: 180px;
+      padding: 8px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      align-self: flex-start;
+    }
+    
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    
+    .calendar-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #495057;
+    }
+    
+    .calendar-nav {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .calendar-nav button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      padding: 0;
+    }
+    
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    
+    .calendar-day-header {
+      text-align: center;
+      font-weight: bold;
+      color: #6c757d;
+      padding: 2px;
+      font-size: 10px;
+    }
+    
+    .calendar-day {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 4px 1px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-height: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    .calendar-day:hover {
+      background: #e3f2fd;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .calendar-day.today {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: #667eea;
+    }
+    
+    .calendar-day.other-month {
+      opacity: 0.3;
+    }
+    
+    .calendar-day-solar {
+      font-size: 10px;
+      font-weight: bold;
+    }
+    
+    .calendar-day-lunar {
+      font-size: 7px;
+      margin-top: 1px;
+      line-height: 1;
+    }
+    
+    /* 宜忌信息 */
+    .calendar-advice {
+      margin-top: 6px;
+      padding: 6px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .calendar-advice h4 {
+      margin: 0 0 4px 0;
+      color: #495057;
+      font-size: 10px;
+    }
+    
+    .calendar-advice-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .calendar-advice-item {
+      font-size: 8px;
+      padding: 2px;
+      border-radius: 2px;
+    }
+    
+    .calendar-advice-item.favorable {
+      color: #28a745;
+      background: #d4edda;
+    }
+    
+    .calendar-advice-item.unfavorable {
+      color: #dc3545;
+      background: #f8d7da;
+    }
+  </style>
+</head>
+<body>
+  <!-- React应用挂载点 -->
+  <div id="root"></div>
+  
+  <script type="module">
+    // 导入React和ReactDOM库
+    import React, { useEffect, useState } from 'https://esm.sh/react@18';
+    import { createRoot } from 'https://esm.sh/react-dom@18/client';
+
+    // 主应用组件
+    function App() {
+      // 状态管理
+      const [hello, setHello] = useState(''); // 服务状态信息
+      const [prompt, setPrompt] = useState(''); // 用户输入的提示词
+      const [messages, setMessages] = useState([]); // 聊天记录列表
+      const [error, setError] = useState(''); // 错误信息
+      const [loading, setLoading] = useState(false); // 加载状态
+      const messagesEndRef = React.useRef(null); // 用于自动滚动到底部的引用
+      
+      // 日历相关状态
+      const [currentDate, setCurrentDate] = useState(new Date());
+      const calendarTitleRef = React.useRef(null);
+      const calendarDayRefs = React.useRef(Array(42).fill(null));
+      const adviceContentRef = React.useRef(null);
+      
+      // 简单的阴历转换（简化版，仅作演示）
+      const lunarMonths = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
+      const lunarDays = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
+                        '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
+                        '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
+      
+      // 生成宜忌信息（中国传统农历版）
+      const generateAdvice = (date) => {
+        const lunarDate = getLunarDate(date);
+        const lunarDay = lunarDate.split('月')[1];
+        
+        // 传统中国农历宜忌（根据农历日期）
+        const traditionalFavorable = {
+          '初一': ['宜：祭祀', '宜：祈福', '宜：斋醮', '宜：会亲友'],
+          '初二': ['宜：祈福', '宜：嫁娶', '宜：纳采', '宜：订盟'],
+          '初三': ['宜：出行', '宜：祭祀', '宜：祈福', '宜：斋醮'],
+          '初四': ['宜：祭祀', '宜：祈福', '宜：求嗣', '宜：斋醮'],
+          '初五': ['宜：嫁娶', '宜：祭祀', '宜：祈福', '宜：出行'],
+          '初六': ['宜：嫁娶', '宜：纳采', '宜：订盟', '宜：祭祀'],
+          '初七': ['宜：祭祀', '宜：祈福', '宜：求嗣', '宜：斋醮'],
+          '初八': ['宜：嫁娶', '宜：祭祀', '宜：祈福', '宜：求嗣'],
+          '初九': ['宜：祭祀', '宜：祈福', '宜：斋醮', '宜：出行'],
+          '初十': ['宜：祭祀', '宜：祈福', '宜：斋醮', '宜：会亲友'],
+          '十五': ['宜：祭祀', '宜：祈福', '宜：斋醮', '宜：嫁娶'],
+          '廿八': ['宜：嫁娶', '宜：纳采', '宜：订盟', '宜：祭祀'],
+          '三十': ['宜：祭祀', '宜：祈福', '宜：斋醮', '宜：会亲友']
+        };
+        
+        const traditionalUnfavorable = {
+          '初一': ['忌：嫁娶', '忌：安葬', '忌：破土', '忌：动土'],
+          '初二': ['忌：开市', '忌：安葬', '忌：破土', '忌：动土'],
+          '初三': ['忌：嫁娶', '忌：安葬', '忌：破土', '忌：动土'],
+          '初四': ['忌：嫁娶', '忌：安葬', '忌：破土', '忌：动土'],
+          '初五': ['忌：开市', '忌：安葬', '忌：破土', '忌：动土'],
+          '初六': ['忌：开市', '忌：安葬', '忌：破土', '忌：动土'],
+          '初七': ['忌：嫁娶', '忌：安葬', '忌：破土', '忌：动土'],
+          '初八': ['忌：开市', '忌：安葬', '忌：破土', '忌：动土'],
+          '初九': ['忌：嫁娶', '忌：安葬', '忌：破土', '忌：动土'],
+          '初十': ['忌：嫁娶', '忌：安葬', '忌：破土', '忌：动土'],
+          '十五': ['忌：开市', '忌：安葬', '忌：破土', '忌：动土'],
+          '廿八': ['忌：开市', '忌：安葬', '忌：破土', '忌：动土'],
+          '三十': ['忌：嫁娶', '忌：安葬', '忌：破土', '忌：动土']
+        };
+        
+        // 根据农历日期选择宜忌，如果没有匹配则使用默认值
+        return {
+          favorable: traditionalFavorable[lunarDay] || ['宜：祈福', '宜：出行', '宜：祭祀'],
+          unfavorable: traditionalUnfavorable[lunarDay] || ['忌：动土', '忌：破土', '忌：安葬']
+        };
+      };
+      
+      // 获取某一天的阴历日期（改进版，根据真实农历月份调整）
+      const getLunarDate = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const day = date.getDate();
+        
+        // 简单的阴历映射（实际项目中应使用更精确的库）
+        // 这里根据真实农历月份进行了调整
+        const lunarMonthOffset = 2; // 假设农历比阳历晚2个月
+        const lunarMonthIndex = (month - lunarMonthOffset + 12) % 12;
+        const lunarDayIndex = (day - 1) % 30;
+        
+        return `${lunarMonths[lunarMonthIndex]}${lunarDays[lunarDayIndex]}`;
+      };
+      
+      // 渲染日历
+      const renderCalendar = () => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        // 更新标题
+        if (calendarTitleRef.current) {
+          calendarTitleRef.current.textContent = `${year}年${month + 1}月`;
+        }
+        
+        // 获取当月第一天
+        const firstDay = new Date(year, month, 1);
+        const firstDayOfWeek = firstDay.getDay(); // 0-6，0是周日
+        
+        // 获取当月最后一天
+        const lastDay = new Date(year, month + 1, 0);
+        const lastDate = lastDay.getDate();
+        
+        // 获取上个月最后一天
+        const prevMonthLastDay = new Date(year, month, 0);
+        const prevMonthLastDate = prevMonthLastDay.getDate();
+        
+        // 渲染日期网格
+        let dayIndex = 0;
+        
+        // 渲染上个月的日期
+        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+          const day = prevMonthLastDate - i;
+          if (calendarDayRefs.current[dayIndex]) {
+            const el = calendarDayRefs.current[dayIndex];
+            el.className = 'calendar-day other-month';
+            el.innerHTML = `<div class="calendar-day-solar">${day}</div><div class="calendar-day-lunar">${getLunarDate(new Date(year, month - 1, day))}</div>`;
+          }
+          dayIndex++;
+        }
+        
+        // 渲染当月的日期
+        const today = new Date();
+        for (let day = 1; day <= lastDate; day++) {
+          if (calendarDayRefs.current[dayIndex]) {
+            const el = calendarDayRefs.current[dayIndex];
+            const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+            el.className = `calendar-day ${isToday ? 'today' : ''}`;
+            el.innerHTML = `<div class="calendar-day-solar">${day}</div><div class="calendar-day-lunar">${getLunarDate(new Date(year, month, day))}</div>`;
+            
+            // 如果是今天，显示宜忌信息
+            if (isToday) {
+              displayAdvice(today);
+            }
+          }
+          dayIndex++;
+        }
+        
+        // 渲染下个月的日期
+        const remainingDays = 42 - dayIndex;
+        for (let day = 1; day <= remainingDays; day++) {
+          if (calendarDayRefs.current[dayIndex]) {
+            const el = calendarDayRefs.current[dayIndex];
+            el.className = 'calendar-day other-month';
+            el.innerHTML = `<div class="calendar-day-solar">${day}</div><div class="calendar-day-lunar">${getLunarDate(new Date(year, month + 1, day))}</div>`;
+          }
+          dayIndex++;
+        }
+      };
+      
+      // 显示宜忌信息
+      const displayAdvice = (date) => {
+        if (!adviceContentRef.current) return;
+        
+        const advice = generateAdvice(date);
+        let html = '';
+        
+        advice.favorable.forEach(item => {
+          html += `<div class="calendar-advice-item favorable">${item}</div>`;
+        });
+        
+        advice.unfavorable.forEach(item => {
+          html += `<div class="calendar-advice-item unfavorable">${item}</div>`;
+        });
+        
+        adviceContentRef.current.innerHTML = html;
+      };
+      
+      // 切换月份
+      const changeMonth = (direction) => {
+        setCurrentDate(prev => {
+          const newDate = new Date(prev.getFullYear(), prev.getMonth() + direction, 1);
+          setTimeout(renderCalendar, 0);
+          return newDate;
+        });
+      };
+      
+      // 组件挂载时渲染日历
+      useEffect(() => {
+        renderCalendar();
+      }, [currentDate]);
+
+      // 组件挂载时执行，检查服务状态
+      useEffect(() => {
+        fetch('http://localhost:8000/health') // 请求Python服务的健康检查接口
+          .then(r => r.json()) // 解析JSON响应
+          .then(d => setHello('在吗: ' + d.status)) // 更新服务状态
+          .catch(() => setHello('连接失败')); // 处理错误
+      }, []);
+      
+      // 自动滚动到底部的效果
+      useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [messages, loading]);
+
+      // 表单提交处理函数
+      async function submit(e) {
+        e.preventDefault(); // 阻止表单默认提交行为
+        if (!prompt.trim()) return; // 防止空消息
+        
+        setError(''); // 清空之前的错误信息
+        
+        // 将用户消息添加到聊天记录
+        const userMessage = {
+          id: Date.now(),
+          role: 'user',
+          content: prompt.trim()
+        };
+        setMessages(prev => [...prev, userMessage]);
+        
+        const currentPrompt = prompt.trim();
+        setPrompt(''); // 清空输入框
+        setLoading(true); // 设置加载状态为true
+        
+        try {
+          // 发送POST请求到Python服务的LLM接口
+          const res = await fetch('http://localhost:8000/llm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }, // 设置请求头
+            body: JSON.stringify({ prompt: currentPrompt }) // 发送JSON格式的请求体
+          });
+          const data = await res.json(); // 解析响应
+          
+          if (data.error) {
+            setError(data.error); // 处理错误信息
+          } else if (data.reply) {
+            // 将助手回复添加到聊天记录
+            const assistantMessage = {
+              id: Date.now() + 1,
+              role: 'assistant',
+              content: data.reply
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+          }
+        } catch {
+          setError('请求失败'); // 处理网络错误
+        } finally {
+          setLoading(false); // 无论请求成功或失败，都设置加载状态为false
+        }
+      }
+
+      // 渲染UI组件
+      return React.createElement('div', { className: 'chat-container' },
+        // 聊天头部
+        React.createElement('div', { className: 'chat-header' },
+          React.createElement('h1', null, 'Soulbit'), // 页面标题
+          React.createElement('div', { className: 'chat-status' }, hello) // 服务状态
+        ),
+        
+        // 日历区域
+        React.createElement('div', { className: 'calendar-container' },
+          // 日历头部
+          React.createElement('div', { className: 'calendar-header' },
+            React.createElement('div', { className: 'calendar-title', ref: el => calendarTitleRef.current = el }, '2025年12月'),
+            React.createElement('div', { className: 'calendar-nav' },
+              React.createElement('button', { onClick: () => changeMonth(-1) }, '‹'),
+              React.createElement('button', { onClick: () => changeMonth(1) }, '›')
+            )
+          ),
+          // 日历网格
+          React.createElement('div', { className: 'calendar-grid' },
+            // 星期头部
+            ['日', '一', '二', '三', '四', '五', '六'].map(day => 
+              React.createElement('div', { key: day, className: 'calendar-day-header' }, day)
+            ),
+            // 日期网格占位符
+            Array(42).fill(null).map((_, index) => 
+              React.createElement('div', { key: index, className: 'calendar-day', ref: el => calendarDayRefs.current[index] = el })
+            )
+          ),
+          // 宜忌信息
+          React.createElement('div', { className: 'calendar-advice' },
+            React.createElement('h4', null, '今日宜忌'),
+            React.createElement('div', { className: 'calendar-advice-content', ref: el => adviceContentRef.current = el })
+          )
+        ),
+        
+        // 聊天记录区域
+        React.createElement('div', { className: 'chat-messages' },
+          // 渲染聊天记录
+          messages.map(message => {
+            // 根据消息角色决定元素顺序
+            const elements = message.role === 'user' ? [
+              React.createElement('div', { className: 'message-content' }, message.content),
+              React.createElement('div', {
+                className: `avatar ${message.role}`,
+                title: message.role === 'user' ? '我' : 'SoulBit'
+              }, message.role === 'user' ? '😊' : 'S')
+            ] : [
+              React.createElement('div', {
+              className: `avatar ${message.role}`,
+              title: message.role === 'user' ? '我' : 'SoulBit'
+            }, message.role === 'user' ? '😊' : 'S'),
+              React.createElement('div', { className: 'message-content' }, message.content)
+            ];
+            
+            return React.createElement('div', {
+              key: message.id,
+              className: `message ${message.role}`
+            }, elements);
+          }),
+          
+          // 条件渲染加载组件（只有当loading为true时才显示）
+          loading && React.createElement('div', { className: 'loading-container' },
+            React.createElement('div', { className: 'loading-spinner' }), // 加载动画
+            React.createElement('span', { className: 'loading-text' }, '正在思考中...') // 加载文本
+          ),
+          
+          // 条件渲染错误信息（只有当error不为空字符串时才显示）
+          error !== '' && React.createElement('div', { className: 'error-message' }, error),
+          
+          // 用于自动滚动的锚点
+          React.createElement('div', { ref: messagesEndRef })
+        ),
+        
+        // 输入区域
+        React.createElement('div', { className: 'chat-input-area' },
+          React.createElement('form', { onSubmit: submit, className: 'chat-form' },
+            React.createElement('textarea', { 
+              value: prompt, 
+              onChange: e => setPrompt(e.target.value), // 输入框变化事件
+              placeholder: '输入您的问题或想法...', 
+              rows: 3
+            }),
+            React.createElement('button', { type: 'submit' }, '发送') // 提交按钮
+          )
+        )
+      );
+    }
+
+    // 创建React根节点并渲染App组件
+    createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>
+
