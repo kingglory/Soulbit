@@ -27,6 +27,8 @@ services:
   web:
     build:  # 构建配置
       context: ./apps/web  # 构建上下文目录
+    environment:  # 环境变量配置
+      - VITE_API_URL=http://gateway:8080  # 配置API网关地址
     depends_on:  # 依赖关系
       - gateway  # 依赖gateway服务，确保gateway先启动
     ports:  # 端口映射

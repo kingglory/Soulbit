@@ -5,7 +5,7 @@
 - 目标是从 0 到 1，按阶段推进，每一步有清晰的完成标准与验证方法。
 
 ## 架构总览
-- 前端：`apps/web`（浏览器直接加载 React，降低门槛）
+- 前端：`apps/web`（基于Vite构建的React应用）
 - 网关：`services/gateway`（Go，统一对外暴露 `http://localhost:8080`，转发到 Python）
 - 后端：`services/pyllm`（Python FastAPI，提供 `/llm` 与 `/health`，负责业务与可选 LLM 调用）
 - 数据库：本地 `SQLite`（Python 侧简单持久化，后续可升级 Postgres）
@@ -60,16 +60,19 @@
   - `go mod tidy`
   - `go run .`
 - 打开前端：
-  - 双击 `d:\githubs\Soulbit\apps\web\index.html` 用浏览器打开。
+  - `cd d:\githubs\Soulbit\apps\web`
+  - `npm install`（首次运行需要）
+  - `npm run dev`
+  - 访问 `http://localhost:5173`
 - 验证链路：
   - 页面顶部显示“Hello from Go”（`services/gateway/main.go:36`）。
   - 输入并发送后显示“LLM 回复：Echo: ...”（`services/pyllm/main.py:42`）。
 
 ## 注意事项
-- 端口占用：前端文件由浏览器直开；Go 默认 `:8080`；Python 默认 `:8000`。
+- 端口占用：前端默认 `:5173`；Go 默认 `:8080`；Python 默认 `:8000`。
 - 跨域：网关已设置 CORS（`services/gateway/main.go:23`），前端直接请求网关。
 - 密钥：若使用 OpenAI，设置系统环境变量 `OPENAI_API_KEY`；失败会自动回退到回声。
-- 依赖：Python 虚拟环境隔离；Go 建议 1.21+；前端暂不需要 Node/构建工具。
+- 依赖：Python 虚拟环境隔离；Go 建议 1.21+；前端需要 Node.js 16+ 和 npm 8+。
 - 日志与错误：先用简单 `log.Println`（Go）与统一 JSON 错误结构，避免混乱输出。
 
 ## 下一步

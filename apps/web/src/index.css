@@ -1,0 +1,518 @@
+/* 基本样式设置 - 现代化更新 */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  padding: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 页面主容器 - 控制整体布局结构 */
+.main-container {
+  /* 宽度设置：占父容器100% */
+  width: 100%;
+  /* 最大宽度：限制整体布局最大宽度，可根据需要调整 */
+  max-width: 1600px; /* 推荐范围：900px-1500px，控制页面整体宽度 */
+  /* 高度设置：占视口高度的85%，避免全屏占用 */
+  height: 85vh; /* 推荐范围：70vh-90vh，控制整体高度 */
+  /* 布局方式：使用flexbox实现左右排列 */
+  display: flex;
+  /* 模块间距：聊天框和日历之间的间距 */
+  gap: 20px; /* 推荐范围：10px-30px，调整两个主要模块的间隔 */
+  /* 对齐方式：子元素顶部对齐，避免日历被不必要拉伸 */
+  align-items: flex-start; /* 可选值：center、flex-end，控制垂直对齐方式 */
+  /* 内边距：容器内部的留白 */
+  padding: 20px; /* 推荐范围：10px-40px，调整整体页面的边距 */
+}
+
+/* 聊天容器样式 - 占大部分布局空间 */
+.chat-container {
+  /* flex比例：与日历容器的比例关系，值越大占比越大 */
+  flex: 8; /* 推荐范围：3-6，与calendar-container的flex值形成对比（当前日历为1） */
+  /* 最小高度：确保聊天框有足够的高度显示内容 */
+  min-height: 960px; /* 推荐范围：500px-1000px，或使用vh单位如70vh */
+  /* 背景色：聊天框的背景 */
+  background: white;
+  /* 圆角：聊天框的圆角效果，值越大越圆润 */
+  border-radius: 16px; /* 推荐范围：8px-24px，控制圆角大小 */
+  /* 阴影：聊天框的阴影效果，增强立体感 */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15); /* 调整参数可改变阴影强度和范围 */
+  /* 溢出处理：隐藏超出容器的内容 */
+  overflow: hidden;
+  /* 内部布局：使用flexbox垂直排列聊天头部、消息区域和输入区域 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 日历区域 - 独立于聊天框，占较小布局比例 */
+.calendar-container {
+  /* flex比例：与聊天容器的比例关系，值越小占比越小 */
+  flex: 1; /* 推荐范围：0.5-2，与chat-container的flex值形成对比（当前聊天框为4） */
+  /* 最小宽度：确保日历有足够的宽度显示内容 */
+  min-width: 350px; /* 推荐范围：220px-300px，控制日历最小宽度 */
+  /* 最大宽度：限制日历的最大宽度 */
+  max-width: 1400px; /* 推荐范围：280px-400px，避免日历过宽 */
+  /* 高度设置：自适应内容高度 */
+  height: auto;
+  /* 最大高度：限制日历的最大高度，解决用户反馈的日历过长问题 */
+  max-height: 1200px; /* 推荐范围：400px-600px，避免日历过高 */
+  /* 背景色：日历的背景 */
+  background: white;
+  /* 圆角：日历的圆角效果 */
+  border-radius: 12px; /* 推荐范围：8px-16px，控制圆角大小 */
+  /* 阴影：日历的阴影效果 */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); /* 调整参数可改变阴影强度和范围 */
+  /* 内边距：日历内部的留白 */
+  padding: 16px; /* 推荐范围：10px-20px，调整日历内部边距 */
+  /* 内部布局：使用flexbox垂直排列日历组件 */
+  display: flex;
+  flex-direction: column;
+  /* 内部元素间距：日历各组件之间的间距 */
+  gap: 12px; /* 推荐范围：8px-20px，调整日历内部元素间隔 */
+  /* 垂直滚动：内容超过最大高度时显示滚动条 */
+  overflow-y: auto; /* 确保日历内容过长时可以滚动查看 */
+}
+
+/* 聊天主内容区域 - 包含聊天头部、消息区域和输入区域 */
+.chat-main {
+  /* flex比例：占聊天容器的剩余空间 */
+  flex: 1;
+  /* 内部布局：垂直排列聊天各部分 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 聊天头部 - 显示聊天标题和状态 */
+.chat-header {
+  /* 内边距：头部内容的留白 */
+  padding: 20px 24px; /* 推荐范围：15px-30px，调整头部上下左右的留白 */
+  /* 背景色：头部背景 */
+  background: #ffffff;
+  /* 底部边框：分隔头部和内容区域 */
+  border-bottom: 1px solid #e2e8f0;
+  /* 阴影：头部的轻微阴影，增强层次感 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.chat-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.chat-status {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* 聊天记录区域 - 显示所有聊天消息 */
+.chat-messages {
+  /* flex比例：占聊天主内容区域的剩余空间 */
+  flex: 1;
+  /* 垂直滚动：消息过多时显示滚动条 */
+  overflow-y: auto;
+  /* 内边距：消息区域的留白 */
+  padding: 20px 24px; /* 推荐范围：15px-30px，调整消息区域的边距 */
+  /* 内部布局：垂直排列消息气泡 */
+  display: flex;
+  flex-direction: column;
+  /* 消息间距：每条消息之间的距离 */
+  gap: 16px; /* 推荐范围：10px-20px，调整消息之间的间隔 */
+  /* 背景色：消息区域的背景 */
+  background: #f8fafc;
+}
+
+/* 消息气泡通用样式 - 改进视觉效果 */
+.message {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  max-width: 85%;
+}
+
+/* 用户消息（右边） */
+.message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+/* 助手消息（左边） */
+.message.assistant {
+  align-self: flex-start;
+}
+
+/* 头像样式 - 现代简约 */
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.avatar.user {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.avatar.assistant {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+/* 消息内容 - 改进气泡设计 */
+.message-content {
+  padding: 14px 18px;
+  border-radius: 18px;
+  word-wrap: break-word;
+  font-size: 15px;
+  line-height: 1.4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.message.user .message-content {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message.assistant .message-content {
+  background: white;
+  color: #1e293b;
+  border-bottom-left-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 输入区域 - 用户发送消息的区域 */
+.chat-input-area {
+  /* 内边距：输入区域的留白 */
+  padding: 20px 24px; /* 推荐范围：15px-30px，调整输入区域的边距 */
+  /* 背景色：输入区域的背景 */
+  background: white;
+  /* 顶部边框：分隔输入区域和消息区域 */
+  border-top: 1px solid #e2e8f0;
+}
+
+.chat-form {
+  /* 内部布局：水平排列输入框和发送按钮 */
+  display: flex;
+  /* 元素间距：输入框和按钮之间的距离 */
+  gap: 12px; /* 推荐范围：8px-16px，调整输入框和按钮的间隔 */
+  /* 对齐方式：底部对齐，使按钮和输入框底部在同一水平线上 */
+  align-items: flex-end;
+}
+
+textarea {
+  /* flex比例：占输入区域的剩余空间 */
+  flex: 1;
+  /* 内边距：输入框内的留白 */
+  padding: 14px 16px; /* 推荐范围：10px-18px，调整输入框内部的边距 */
+  /* 边框：输入框的边框样式 */
+  border: 2px solid #e2e8f0;
+  /* 圆角：输入框的圆角效果 */
+  border-radius: 12px; /* 推荐范围：8px-16px，控制输入框圆角大小 */
+  /* 禁止调整大小：固定输入框尺寸 */
+  resize: none;
+  /* 字体：与页面保持一致的字体 */
+  font-family: inherit;
+  /* 字体大小：输入文字的大小 */
+  font-size: 15px; /* 推荐范围：14px-18px，调整输入文字大小 */
+  /* 高度：输入框的固定高度 */
+  height: 80px; /* 推荐范围：60px-120px，调整输入框高度 */
+  /* 轮廓：聚焦时不显示默认轮廓 */
+  outline: none;
+  /* 过渡效果：样式变化时的动画 */
+  transition: all 0.3s ease;
+  /* 背景色：输入框的背景 */
+  background: #f8fafc;
+}
+
+textarea:focus {
+  /* 聚焦时边框颜色 */
+  border-color: #3b82f6;
+  /* 聚焦时背景色 */
+  background: white;
+  /* 聚焦时阴影：增强视觉反馈 */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+button {
+  /* 内边距：按钮的留白 */
+  padding: 14px 28px; /* 推荐范围：12px-24px，调整按钮大小 */
+  /* 背景色：按钮的渐变背景 */
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  /* 文字颜色：按钮文字颜色 */
+  color: white;
+  /* 边框：无边框 */
+  border: none;
+  /* 圆角：按钮的圆角效果 */
+  border-radius: 12px; /* 推荐范围：8px-16px，控制按钮圆角大小 */
+  /* 光标：鼠标悬停时显示指针 */
+  cursor: pointer;
+  /* 字体大小：按钮文字大小 */
+  font-size: 15px; /* 推荐范围：14px-18px，调整按钮文字大小 */
+  /* 字体粗细：按钮文字粗细 */
+  font-weight: 600;
+  /* 过渡效果：样式变化时的动画 */
+  transition: all 0.3s ease;
+  /* 阴影：按钮的阴影效果 */
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* 加载动画样式 */
+.loading-container {
+  margin: 15px 0;
+  padding: 14px 18px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #64748b;
+  align-self: flex-start;
+  max-width: 85%;
+  border-bottom-left-radius: 4px;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 15px;
+}
+
+/* 错误信息 */
+.error-message {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin: 15px 0;
+  align-self: center;
+  border: 1px solid #fecaca;
+  font-size: 15px;
+}
+
+/* 日历内部样式 - 现代化改进 */
+.calendar-container .calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.calendar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.calendar-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.calendar-nav button {
+  background: #f1f5f9;
+  color: #475569;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  padding: 0;
+  box-shadow: none;
+}
+
+.calendar-nav button:hover {
+  background: #e2e8f0;
+  transform: none;
+  box-shadow: none;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.calendar-day-header {
+  text-align: center;
+  font-weight: 600;
+  color: #64748b;
+  padding: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.calendar-day {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.calendar-day:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.calendar-day.today {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border-color: #8b5cf6;
+}
+
+.calendar-day.other-month {
+  opacity: 0.4;
+}
+
+.calendar-day-solar {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.calendar-day-lunar {
+  font-size: 10px;
+  margin-top: 2px;
+  line-height: 1;
+}
+
+/* 宜忌信息 - 改进样式 */
+.calendar-advice {
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.calendar-advice h4 {
+  margin: 0 0 12px 0;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.calendar-advice-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar-advice-item {
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.calendar-advice-item.favorable {
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.calendar-advice-item.unfavorable {
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+/* 响应式设计 - 适配小屏幕设备 */
+/* 当屏幕宽度小于等于768px时（通常是手机和平板），应用以下样式 */
+@media (max-width: 768px) {
+  .main-container {
+    /* 布局方向：从水平排列改为垂直排列 */
+    flex-direction: column;
+    /* 高度：自适应内容，不再固定高度 */
+    height: auto;
+    /* 最大高度：取消限制 */
+    max-height: none;
+    /* 宽度：占满屏幕宽度 */
+    width: 100%;
+    /* 内边距：调整为适合小屏幕的边距 */
+    padding: 16px; /* 比桌面版小，节省空间 */
+  }
+  
+  .calendar-container {
+    /* 宽度：占满屏幕宽度 */
+    width: 100%;
+    /* 最大宽度：取消限制，让日历在小屏幕上充分利用空间 */
+    max-width: 100%;
+    /* 最大高度：取消限制，适应垂直排列 */
+    max-height: none;
+  }
+  
+  .chat-container {
+    /* 高度：占视口高度的70%，确保有足够空间显示聊天内容 */
+    height: 70vh;
+    /* 宽度：占满屏幕宽度 */
+    width: 100%;
+    /* 圆角：调整为适合小屏幕的圆角 */
+    border-radius: 12px; /* 比桌面版小 */
+  }
+  
+  .chat-messages {
+    /* 内边距：调整为适合小屏幕的边距 */
+    padding: 16px; /* 比桌面版小 */
+  }
+  
+  .message {
+    /* 最大宽度：调整为更适合小屏幕的宽度 */
+    max-width: 90%; /* 比桌面版宽，充分利用小屏幕空间 */
+  }
+}
