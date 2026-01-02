@@ -6,7 +6,10 @@ import (
 	"encoding/json" // 提供JSON编解码功能，用于处理HTTP请求和响应
 	"log"           // 提供日志记录功能，用于输出服务器运行信息
 	"net/http"      // 提供HTTP客户端和服务器实现，用于构建API网关
+	"net/url"
 	"os"            // 提供操作系统功能接口，用于读取环境变量
+
+	"github.com/gorilla/websocket"
 )
 
 // 数据结构定义
@@ -27,13 +30,21 @@ type llmOut struct {
 	Error string `json:"error,omitempty"` // 错误信息（可选）
 }
 
+// WebSocket升级器
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		// 允许所有来源的WebSocket连接
+		return true
+	},
+}
+
 // cors CORS中间件，处理跨域请求
 func cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// 设置CORS头信息
 		w.Header().Set("Access-Control-Allow-Origin", "*") // 允许所有来源
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type") // 允许Content-Type头
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS") // 允许的HTTP方法
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, WS, WSS") // 允许的HTTP方法
 		
 		// 处理OPTIONS预检请求
 		if r.Method == http.MethodOptions {
@@ -44,6 +55,128 @@ func cors(next http.Handler) http.Handler {
 		// 传递请求到下一个处理器
 		next.ServeHTTP(w, r)
 	})
+}
+
+// wsHandler WebSocket代理处理函数，转发WebSocket连接到Python服务
+// 功能：将客户端的WebSocket连接转发到Python后端服务，实现双向实时通信
+func wsHandler(w http.ResponseWriter, r *http.Request) {
+	// 1. 将HTTP请求升级为WebSocket连接
+	// upgrader对象定义了WebSocket连接的配置（如允许的来源）
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("无法升级为WebSocket连接: %v", err)
+		return
+	}
+	// 延迟关闭客户端WebSocket连接（函数结束时执行）
+	defer c.Close()
+
+	// 2. 获取Python后端服务的URL配置
+	// 优先从环境变量PY_SERVICE_URL获取，如果没有则使用默认值
+	pyUrl := os.Getenv("PY_SERVICE_URL")
+	if pyUrl == "" {
+		pyUrl = "http://localhost:8000" // 默认Python服务地址
+	}
+
+	// 3. 解析Python服务URL并转换为WebSocket协议
+	wsUrl, err := url.Parse(pyUrl)
+	if err != nil {
+		log.Printf("解析Python服务URL失败: %v", err)
+		return
+	}
+
+	// 将HTTP协议转换为WebSocket协议
+	if wsUrl.Scheme == "http" {
+		wsUrl.Scheme = "ws"   // HTTP -> WebSocket
+	} else if wsUrl.Scheme == "https" {
+		wsUrl.Scheme = "wss"  // HTTPS -> WebSocket Secure
+	}
+
+	// 设置WebSocket连接路径
+	wsUrl.Path = "/ws/chat"
+
+	// 4. 建立与Python服务的WebSocket连接
+	pyConn, _, err := websocket.DefaultDialer.Dial(wsUrl.String(), nil)
+	if err != nil {
+		log.Printf("连接Python WebSocket服务失败: %v", err)
+		return
+	}
+	// 延迟关闭与Python服务的WebSocket连接
+	defer pyConn.Close()
+
+	log.Printf("WebSocket代理已连接到: %s", wsUrl.String())
+
+	// 5. 创建消息转发通道
+	// clientChan: 客户端发送到Python服务的消息通道
+	// pythonChan: Python服务发送到客户端的消息通道
+	clientChan := make(chan []byte)
+	pythonChan := make(chan []byte)
+
+	// 6. 创建goroutine（并发线程）：从客户端读取消息并转发到Python服务
+	go func() {
+		defer close(clientChan) // 函数结束时关闭通道
+		for {
+			// 从客户端WebSocket连接读取消息
+			_, message, err := c.ReadMessage()
+			if err != nil {
+				// 检查是否为意外关闭错误
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					log.Printf("从客户端读取消息错误: %v", err)
+				}
+				return // 退出goroutine
+			}
+			// 将读取到的消息发送到clientChan通道
+			clientChan <- message
+		}
+	}()
+
+	// 7. 创建goroutine：从Python服务读取消息并转发到客户端
+	go func() {
+		defer close(pythonChan) // 函数结束时关闭通道
+		for {
+			// 从Python服务WebSocket连接读取消息
+			_, message, err := pyConn.ReadMessage()
+			if err != nil {
+				// 检查是否为意外关闭错误
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					log.Printf("从Python服务读取消息错误: %v", err)
+				}
+				return // 退出goroutine
+			}
+			// 将读取到的消息发送到pythonChan通道
+			pythonChan <- message
+		}
+	}()
+
+	// 8. 主循环：处理消息转发
+	for {
+		// 使用select语句监听两个通道的消息
+		select {
+		// 处理客户端到Python服务的消息
+		case message, ok := <-clientChan:
+			if !ok {
+				// clientChan通道已关闭，发送关闭消息给Python服务并退出
+				pyConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+				return
+			}
+			// 将客户端消息发送到Python服务
+			if err := pyConn.WriteMessage(websocket.TextMessage, message); err != nil {
+				log.Printf("发送消息到Python服务错误: %v", err)
+				return
+			}
+		// 处理Python服务到客户端的消息
+		case message, ok := <-pythonChan:
+			if !ok {
+				// pythonChan通道已关闭，发送关闭消息给客户端并退出
+				c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+				return
+			}
+			// 将Python服务消息发送到客户端
+			if err := c.WriteMessage(websocket.TextMessage, message); err != nil {
+				log.Printf("发送消息到客户端错误: %v", err)
+				return
+			}
+		}
+	}
 }
 
 // helloHandler 健康检查接口处理函数
@@ -114,6 +247,7 @@ func main() {
 	// 注册路由处理函数
 	mux.HandleFunc("/api/hello", helloHandler) // 健康检查路由
 	mux.HandleFunc("/api/llm", llmHandler) // LLM接口路由
+	mux.HandleFunc("/api/ws/chat", wsHandler) // WebSocket聊天接口路由
 	
 	// 启动HTTP服务器，监听8080端口，使用CORS中间件
 	log.Println("Gateway on :8080") // 记录日志

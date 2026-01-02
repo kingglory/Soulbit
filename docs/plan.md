@@ -13,7 +13,7 @@
 ## 当前进度
 - 前端入口：`apps/web/index.html:26` 通过 `fetch` 请求网关 `GET /api/hello` 与 `POST /api/llm`。
 - Go 网关：`services/gateway/main.go:66` 提供 `/api/hello`（测试用）与 `/api/llm`（转发到 Python），含基础 CORS。
-- Python 服务：`services/pyllm/main.py:42` 提供 `/llm`（回声并写入 SQLite；若配置 `OPENAI_API_KEY` 尝试调用 OpenAI）与 `/health`。
+- Python 服务：`services/pyllm/main.py:42` 提供 `/llm`（基于多Agent工作流生成回复并写入 SQLite，支持ModelScope和OpenAI模型）与 `/health`。
 - 依赖文件：`services/pyllm/requirements.txt`，包含 `fastapi/uvicorn/pydantic/openai`。
 
 ## 阶段计划
@@ -46,8 +46,8 @@
 - 切换策略：先抽象 DAO 层，避免业务直接依赖具体库。
 
 ### 阶段 5：LLM 能力演进（可选）
-- 路线：回声 → 云模型直连（OpenAI） → 简单上下文记忆 → 历史拼接 → 可配置模型参数（温度/系统提示）。
-- 安全：使用环境变量 `OPENAI_API_KEY`，不要把密钥写入仓库。
+- 路线：回声 → 云模型直连（OpenAI/ModelScope） → 多Agent工作流（决策Agent+专业Agent） → 简单上下文记忆 → 历史拼接 → 可配置模型参数（温度/系统提示）。
+- 安全：使用环境变量 `OPENAI_API_KEY` 或 `MODELSCOPE_API_KEY`，不要把密钥写入仓库。
 
 ## 运行与验证（Windows）
 - 启动 Python 服务：
@@ -71,7 +71,7 @@
 ## 注意事项
 - 端口占用：前端默认 `:5173`；Go 默认 `:8080`；Python 默认 `:8000`。
 - 跨域：网关已设置 CORS（`services/gateway/main.go:23`），前端直接请求网关。
-- 密钥：若使用 OpenAI，设置系统环境变量 `OPENAI_API_KEY`；失败会自动回退到回声。
+- 密钥：若使用 OpenAI，设置系统环境变量 `OPENAI_API_KEY`；若使用 ModelScope，设置 `MODELSCOPE_API_KEY`；未配置则回退到回声。
 - 依赖：Python 虚拟环境隔离；Go 建议 1.21+；前端需要 Node.js 16+ 和 npm 8+。
 - 日志与错误：先用简单 `log.Println`（Go）与统一 JSON 错误结构，避免混乱输出。
 

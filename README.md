@@ -2,6 +2,12 @@
 
 一个本地可运行的全栈学习项目，技术栈：React（前端）、Go（网关）、Python FastAPI（LLM 服务），数据库使用 SQLite。
 
+## 项目界面展示
+
+![Soulbit项目界面](docs/main_image.jpg)
+
+项目前端界面展示，包含聊天功能和日历功能
+
 ## 目录结构
 - `apps/web`：React前端，基于Vite构建
 - `services/gateway`：Go 网关，统一对外 `http://localhost:8080`
@@ -49,6 +55,7 @@
   - **ModelScope配置**：
     - `MODELSCOPE_BASE_URL`：ModelScope API基础地址，默认：`https://api-inference.modelscope.cn/v1`
     - `MODELSCOPE_MODEL_ID`：ModelScope模型ID，默认：`deepseek-ai/DeepSeek-V3.2`
+  - **多Agent工作流**：基于LangChain实现，支持闲聊Agent和专业Agent的自动切换，提供更智能的对话体验
   - **其他配置**：
     - `LANGCHAIN_API_KEY`：LangChain API密钥（可选）
     - `TAVILY_API_KEY`：Tavily搜索API密钥（可选）

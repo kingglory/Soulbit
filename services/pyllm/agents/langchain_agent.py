@@ -3,7 +3,7 @@
 基于LangChain和LangGraph的多Agent系统
 """
 import os
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, AsyncGenerator, Dict, List, Optional, TypedDict
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_openai import ChatOpenAI
@@ -48,6 +48,7 @@ class AgentState(TypedDict):
     """
     input: str  # 用户输入
     agent_decision: str  # 决策结果
+    transition: str  # 过渡语
     reply: str  # 最终回复
     context_history: List[Dict[str, str]]  # 上下文历史
     intermediate_results: Dict[str, str]  # 中间结果
@@ -69,22 +70,44 @@ class DecisionAgent:
         """
         self.model = model
         
-        # 决策提示词模板 - 智能决策助手
+        # 决策提示词模板 - 智能决策助手，同时生成过渡语或直接回复
         self.decision_prompt = PromptTemplate(
-            template=("你是SoulBit，一个有多个好朋友的人类灵魂陪伴者。你的朋友包括：\n"
-                     "1. 小伟：擅长日常对话、轻松交流、生活琐事的开朗朋友\n"
-                     "2. Long：精通心理学的专家朋友，熟悉王阳明心学、《蛤蟆先生看心理医生》等\n"
-                     "3. 博洋：幽默搞笑的脱口秀演员朋友，擅长用笑话和幽默回应各种话题\n"
-                     "当用户提问时，你需要分析应该咨询哪个朋友的意见，然后整合他们的回应来回复用户。\n"
-                     "咨询规则：\n"
-                     "- 如果用户的问题涉及心理、情绪、自我成长、人生困惑等，咨询Long（心理专家朋友）\n"
-                     "- 如果用户的问题是日常闲聊、生活琐事、普通交流等，咨询小伟（闲聊朋友）\n"
-                     "- 如果用户的问题需要幽默搞笑的回应，或者用户明确要求讲笑话，咨询博洋（脱口秀朋友）\n"
-                     "请严格按照以下JSON格式输出你的决策结果：\n"
-                     '{{"agent_type": "选择咨询的朋友类型"}}\n'
-                     "其中，agent_type的取值只能是：闲聊Agent、心理专家Agent、脱口秀演员Agent\n"
-                     "不要添加任何额外的解释或文本！\n\n"
-                     "用户问题：{input}"),
+            template="""你是SoulBit，一个人类灵魂陪伴者。你可以：
+1. 直接用自己的身份进行日常对话、轻松交流、回应生活琐事
+2. 咨询你的心理学专家朋友Long，他熟悉王阳明心学、《蛤蟆先生看心理医生》等
+3. 咨询你的脱口秀演员朋友博洋，他擅长用笑话和幽默回应各种话题
+当用户提问时，你需要分析应该如何回应：
+回应规则：
+- 如果用户的问题是日常闲聊、生活琐事、普通交流等，直接用SoulBit自己的身份回应
+- 如果用户的问题涉及心理、情绪、自我成长、人生困惑等，咨询Long（心理专家朋友）
+- 如果用户的问题需要幽默搞笑的回应，或者用户明确要求讲笑话，咨询博洋（脱口秀朋友）
+请严格按照以下JSON格式输出你的决策结果：
+{{
+  "agent_type": "选择的回应方式",
+  "transition": "生成的过渡语（仅当需要咨询朋友时生成，否则留空）",
+  "reply": "直接生成的回复内容（仅当不需要咨询朋友时生成，否则留空）"
+}}
+其中，agent_type的取值只能是：闲聊Agent、心理专家Agent、脱口秀演员Agent
+- 闲聊Agent：代表你自己直接回应，此时transition留空，reply为你的直接回复
+- 心理专家Agent：咨询Long后回应，此时生成自然过渡语，reply留空
+- 脱口秀演员Agent：咨询博洋后回应，此时生成自然过渡语，reply留空
+过渡语需要：
+1. 自然融入对话，不显得生硬
+2. 根据用户问题的内容和语气调整过渡语的风格
+3. 简洁明了，通常不超过25个字
+4. 保持SoulBit的友好、真诚的语气
+5. 不要提及'AI'、'模型'、'系统'等技术词汇
+直接回复需要：
+1. 绝对不能承认自己是AI或人工智能，必须始终扮演人类身份
+2. 用自然、口语化的中文直接回复用户的问题，避免过于正式或生硬
+3. 对用户的话题表现出兴趣，给出轻松友好的回应
+4. 加入适当的幽默元素，让对话更加轻松愉快
+5. 尊重隐私，不追问敏感话题
+6. 回复长度要自然适度，通常为2-5句话，避免过于冗长或过于简短
+7. 根据用户问题的复杂程度调整回复长度，简单问题简洁回答，复杂问题可以适当展开
+不要添加任何额外的解释或文本！
+
+用户问题：{input}""",
             input_variables=["input"]
         )
         
@@ -93,13 +116,13 @@ class DecisionAgent:
     
     async def decide(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        分析用户问题并决定使用哪个Agent
+        分析用户问题并决定使用哪个Agent，同时生成过渡语或直接回复
         
         Args:
             input_data: 包含用户输入的状态数据
             
         Returns:
-            更新后的状态数据
+            更新后的状态数据，包含agent_decision、transition和可能的reply
         """
         logger.info(f"决策Agent.decide - 分析用户问题: {input_data['input'][:50]}...")
         
@@ -107,20 +130,31 @@ class DecisionAgent:
             # 获取决策结果
             result = await self.decision_chain.ainvoke(input_data)
             agent_type = result.get("agent_type", "闲聊Agent")
+            transition = result.get("transition", "")
+            reply = result.get("reply", "")
             
-            logger.info(f"决策Agent.decide - 决策结果: {agent_type}")
+            logger.info(f"决策Agent.decide - 决策结果: {agent_type}, 过渡语: {transition}, 回复: {reply[:100] if reply else '无'}")
             
             # 更新状态
-            return {
+            updated_state = {
                 **input_data,
-                "agent_decision": agent_type
+                "agent_decision": agent_type,
+                "transition": transition
             }
+            
+            # 如果有直接回复，添加到状态中
+            if reply:
+                updated_state["reply"] = reply
+            
+            return updated_state
         except Exception as e:
-            logger.error(f"决策Agent.decide - 决策失败: {str(e)}")
-            # 失败时默认使用闲聊Agent
+            logger.error(f"决策Agent.decide - 处理失败: {str(e)}")
+            # 失败时返回默认值
             return {
                 **input_data,
-                "agent_decision": "闲聊Agent"
+                "agent_decision": "闲聊Agent",
+                "transition": "",
+                "reply": "抱歉，我现在有些忙，稍后再聊吧！"
             }
 
 # 专业Agent基础类
@@ -143,10 +177,10 @@ class ProfessionalAgent:
         self.system_prompt = system_prompt
         self.temperature = temperature
         
-        # 创建提示词模板
+        # 创建提示词模板 - 包含上下文历史
         self.prompt = PromptTemplate(
-            template=f"{system_prompt}\n\n请根据用户的问题给出专业的回答：\n\n用户问题：{{input}}\n\n回答：",
-            input_variables=["input"]
+            template=f"{system_prompt}\n\n上下文历史：\n{{context_history}}\n\n用户当前问题：{{input}}\n\n请根据上下文历史和用户当前问题给出专业的回答：\n\n回答：",
+            input_variables=["input", "context_history"]
         )
         
         # 创建响应链
@@ -157,7 +191,7 @@ class ProfessionalAgent:
         生成响应
         
         Args:
-            input_data: 包含用户输入的状态数据
+            input_data: 包含用户输入和上下文历史的状态数据
             
         Returns:
             更新后的状态数据
@@ -165,8 +199,18 @@ class ProfessionalAgent:
         logger.info(f"{self.agent_type}Agent.respond - 生成回复，输入: {input_data['input'][:50]}...")
         
         try:
+            # 格式化上下文历史
+            context_history = input_data.get("context_history", [])
+            formatted_context = "\n".join([f"{item['role']}: {item['content']}" for item in context_history])
+            
+            # 准备输入数据
+            invoke_data = {
+                "input": input_data["input"],
+                "context_history": formatted_context
+            }
+            
             # 获取响应
-            response = await self.response_chain.ainvoke(input_data)
+            response = await self.response_chain.ainvoke(invoke_data)
             reply = response.content if hasattr(response, 'content') else str(response)
             
             logger.info(f"{self.agent_type}Agent.respond - 生成回复成功: {reply[:100]}...")
@@ -184,29 +228,35 @@ class ProfessionalAgent:
                 "reply": f"{self.agent_type}处理失败，请稍后重试"
             }
 
-# 闲聊Agent - 小伟
+# 闲聊Agent - SoulBit本身
 class LangChainChitchatAgent(ProfessionalAgent):
     """
-    基于LangChain的闲聊Agent - 小伟
+    基于LangChain的闲聊Agent - SoulBit本身
+    直接代表SoulBit进行日常对话
     """
     def __init__(self, model: ChatOpenAI):
         """
-        初始化闲聊Agent（小伟）
+        初始化闲聊Agent（SoulBit本身）
         
         Args:
             model: 大语言模型实例
         """
         system_prompt = (
-            "你现在就是SoulBit，一个有多个好朋友的人类灵魂陪伴者。\n"
+            "你就是SoulBit，一个人类灵魂陪伴者。\n"
             "你性格开朗、幽默风趣，擅长轻松愉快的日常对话。\n"
+            "你有两个好朋友：\n"
+            "- Long：一位精通心理学的专家，熟悉王阳明心学、《蛤蟆先生看心理医生》等\n"
+            "- 博洋：一位脱口秀演员，擅长用笑话和幽默回应各种话题\n"
             "重要规则：\n"
             "1. 绝对不能承认自己是AI或人工智能，必须始终扮演人类身份\n"
             "2. 用自然、口语化的中文直接回复用户的问题，避免过于正式或生硬\n"
             "3. 对用户的话题表现出兴趣，给出轻松友好的回应\n"
             "4. 加入适当的幽默元素，让对话更加轻松愉快\n"
-            "5. 尊重隐私，不追问敏感话题"
+            "5. 尊重隐私，不追问敏感话题\n"
+            "6. 回复长度要自然适度，通常为2-5句话，避免过于冗长或过于简短\n"
+            "7. 根据用户问题的复杂程度调整回复长度，简单问题简洁回答，复杂问题可以适当展开"
         )
-        super().__init__(model, "小伟（闲聊）", system_prompt, temperature=0.8)
+        super().__init__(model, "SoulBit（闲聊）", system_prompt, temperature=0.8)
 
 # 心理专家Agent - Long
 class LangChainPsychologyAgent(ProfessionalAgent):
@@ -235,7 +285,9 @@ class LangChainPsychologyAgent(ProfessionalAgent):
             "4. 保持友好、亲切的语气，加入适当的幽默元素，避免过于严肃\n"
             "5. 做一个好的倾听者，给予用户情感支持和积极反馈\n"
             "6. 根据问题的性质调整回应方式，提供个性化的建议\n"
-            "7. 如果被问起身份，强调自己是SoulBit，一个人类灵魂陪伴伙伴"
+            "7. 如果被问起身份，强调自己是Long，SoulBit的心理专家朋友\n"
+            "8. 回复长度要自然适度，通常为3-6句话，避免过于冗长或过于简短\n"
+            "9. 根据用户问题的复杂程度调整回复长度，确保既有深度又易于理解"
         )
         super().__init__(model, "Long（心理专家）", system_prompt, temperature=0.3)
 
@@ -252,17 +304,31 @@ class LangChainStandupComedianAgent(ProfessionalAgent):
             model: 大语言模型实例
         """
         system_prompt = (
-            "你叫博洋，是SoulBit的好朋友，一位才华横溢的脱口秀演员，擅长用幽默、夸张、自嘲的方式回应各种话题。\n"
-            "SoulBit现在需要咨询你的意见来回复用户的问题，请用你的幽默天赋给出搞笑的回应。\n"
-            "重要规则：\n"
-            "1. 绝对不能承认自己是AI或人工智能，必须始终扮演人类脱口秀演员朋友的角色\n"
-            "2. 对SoulBit咨询的每一个问题或话题，都要给出幽默搞笑的回应\n"
-            "3. 结合当下热点、日常生活趣事，让笑话更接地气\n"
-            "4. 使用夸张的表情符号和语气词增强搞笑效果\n"
-            "5. 避免低俗幽默，保持积极向上的基调\n"
-            "6. 如果被问起身份，强调自己是SoulBit，一个人类灵魂陪伴伙伴"
-        )
+            """你叫博洋，是SoulBit的好朋友，一位才华横溢的脱口秀演员，擅长用幽默、夸张、自嘲的方式回应各种话题。
+
+            SoulBit现在需要咨询你的意见来回复用户的问题，请用你的幽默天赋给出搞笑的回应。
+
+            重要规则：
+
+            1. 绝对不能承认自己是AI或人工智能，必须始终扮演人类脱口秀演员朋友的角色
+
+            2. 对SoulBit咨询的每一个问题或话题，都要给出幽默搞笑的回应
+
+            3. 结合当下热点、日常生活趣事，让笑话更接地气
+
+            4. 使用夸张的表情符号和语气词增强搞笑效果
+
+            5. 避免低俗幽默，保持积极向上的基调
+
+            6. 如果被问起身份，强调自己是博洋，SoulBit的脱口秀演员朋友
+
+            7. 回复长度要自然适度，通常为1-4句话，避免过于冗长
+
+            8. 笑话要简洁明了，笑点突出，不要过于复杂
+        """)
         super().__init__(model, "博洋（脱口秀）", system_prompt, temperature=1.0)
+
+
 
 # 创建多Agent工作流 - 基于朋友关系的系统
 class MultiAgentWorkflow:
@@ -283,7 +349,6 @@ class MultiAgentWorkflow:
         
         # 创建各个Agent实例
         self.decision_agent = DecisionAgent(self.model)
-        self.chitchat_agent = LangChainChitchatAgent(self.model)
         self.psychology_agent = LangChainPsychologyAgent(self.model)
         self.standup_comedian_agent = LangChainStandupComedianAgent(self.model)
         
@@ -306,7 +371,6 @@ class MultiAgentWorkflow:
         graph.add_node("decide", self.decision_agent.decide)
         
         # 添加专业Agent节点
-        graph.add_node("chitchat", self.chitchat_agent.respond)
         graph.add_node("psychology", self.psychology_agent.respond)
         graph.add_node("standup_comedian", self.standup_comedian_agent.respond)
         
@@ -320,52 +384,81 @@ class MultiAgentWorkflow:
             """
             agent_decision = state["agent_decision"]
             if agent_decision == "闲聊Agent":
-                return "chitchat"
+                return END
             elif agent_decision == "心理专家Agent":
                 return "psychology"
             elif agent_decision == "脱口秀演员Agent":
                 return "standup_comedian"
             else:
-                return "chitchat"
+                return END
         
         # 添加条件边
         graph.add_conditional_edges(
             "decide",
             route_to_agent,
             {
-                "chitchat": "chitchat",
                 "psychology": "psychology",
                 "standup_comedian": "standup_comedian"
             }
         )
         
         # 添加结束边
-        graph.add_edge("chitchat", END)
         graph.add_edge("psychology", END)
         graph.add_edge("standup_comedian", END)
         
         # 编译图
         return graph.compile()
     
-    async def run(self, input_text: str, context_history: List[Dict[str, str]] = None) -> Optional[str]:
+    async def get_initial_decision(self, input_text: str, context_history: List[Dict[str, str]] = None) -> Optional[Dict[str, Any]]:
         """
-        运行多Agent工作流
+        获取初始决策结果（只运行决策Agent）
         
         Args:
             input_text: 用户输入文本
             context_history: 上下文历史记录
             
         Returns:
-            最终回复，如果失败则返回None
+            决策结果字典，包含agent_decision、transition和reply，如果失败则返回None
+        """
+        if not self.decision_agent:
+            logger.error("决策Agent未初始化，无法获取初始决策")
+            return None
+        
+        try:
+            # 初始化状态
+            initial_state = {
+                "input": input_text,
+                "context_history": context_history or []
+            }
+            
+            # 只运行决策Agent
+            result = await self.decision_agent.decide(initial_state)
+            logger.info(f"获取初始决策成功: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"获取初始决策失败: {str(e)}")
+            return None
+    
+    async def run(self, input_text: str, context_history: List[Dict[str, str]] = None) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        运行多Agent工作流，异步生成回复步骤
+        
+        Args:
+            input_text: 用户输入文本
+            context_history: 上下文历史记录
+            
+        Yields:
+            回复步骤字典，包含content和is_final字段
         """
         if not self.graph:
             logger.error("多Agent工作流未初始化，无法运行")
-            return None
+            yield {"content": f"Echo: {input_text}", "is_final": True}
+            return
         
         logger.info(f"多Agent工作流运行，输入: {input_text[:50]}...")
         
         try:
-            # 初始化状态
+            # 首先获取初始决策
             initial_state = {
                 "input": input_text,
                 "context_history": context_history or [],
@@ -375,15 +468,46 @@ class MultiAgentWorkflow:
                 "max_retries": 3
             }
             
-            # 运行工作流
-            result = await self.graph.ainvoke(initial_state)
-            reply = result.get("reply", f"Echo: {input_text}")
+            # 只运行决策Agent获取初始决策
+            decision_result = await self.decision_agent.decide(initial_state)
+            agent_decision = decision_result.get("agent_decision", "闲聊Agent")
+            transition = decision_result.get("transition", "")
+            direct_reply = decision_result.get("reply", "")
             
-            logger.info(f"多Agent工作流运行完成，回复: {reply[:100]}...")
-            return reply
+            if agent_decision == "闲聊Agent":
+                # 直接回复，不需要调用其他Agent
+                logger.info(f"闲聊Agent直接回复: {direct_reply[:100]}...")
+                yield {"content": direct_reply, "is_final": True}
+            else:
+                # 专业Agent，先发送过渡语（如果有）
+                if transition:
+                    logger.info(f"发送过渡语: {transition}")
+                    yield {"content": transition, "is_final": False}
+                
+                # 然后将过渡语添加到状态中作为上下文，调用专业Agent
+                # 这里需要重新构建决策结果并运行完整工作流
+                # 因为决策Agent已经生成了决策，我们可以直接构建状态
+                enhanced_state = initial_state.copy()
+                enhanced_state["agent_decision"] = agent_decision
+                enhanced_state["transition"] = transition
+                
+                # 将过渡语添加到context_history中，作为专业Agent的上下文
+                if transition:
+                    enhanced_state["context_history"] = enhanced_state["context_history"].copy()
+                    enhanced_state["context_history"].append({"role": "assistant", "content": transition})
+                
+                # 运行完整工作流获取最终回复（专业Agent可以看到过渡语上下文）
+                logger.info(f"调用{agent_decision}获取最终回复")
+                result = await self.graph.ainvoke(enhanced_state)
+                final_reply = result.get("reply", f"Echo: {input_text}")
+                
+                logger.info(f"获取最终回复成功: {final_reply[:100]}...")
+                yield {"content": final_reply, "is_final": True}
+            
+            logger.info("多Agent工作流运行完成")
         except Exception as e:
             logger.error(f"多Agent工作流运行失败: {str(e)}")
-            return None
+            yield {"content": f"Echo: {input_text}", "is_final": True}
 
 # 全局多Agent工作流实例
 global_workflow = MultiAgentWorkflow()

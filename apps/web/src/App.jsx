@@ -8,7 +8,9 @@ function App() {
   const [messages, setMessages] = useState([]); // 聊天记录列表
   const [error, setError] = useState(''); // 错误信息
   const [loading, setLoading] = useState(false); // 加载状态
+  const [wsConnected, setWsConnected] = useState(false); // WebSocket连接状态
   const messagesEndRef = useRef(null); // 用于自动滚动到底部的引用
+  const wsRef = useRef(null); // WebSocket连接引用
   
   // 日历相关状态
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -188,6 +190,69 @@ function App() {
       .then(d => setHello('在吗: ' + d.message)) // 更新服务状态
       .catch(() => setHello('连接失败')); // 处理错误
   }, []);
+
+  // WebSocket连接管理
+  useEffect(() => {
+    // 根据环境自动选择WebSocket地址
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    // 将HTTP协议转换为WebSocket协议
+    const wsProtocol = apiUrl.startsWith('https://') ? 'wss://' : 'ws://';
+    const wsHost = apiUrl.replace(/^https?:\/\//, '');
+    const wsUrl = `${wsProtocol}${wsHost}/api/ws/chat`;
+
+    // 创建WebSocket连接
+    wsRef.current = new WebSocket(wsUrl);
+
+    // 连接打开处理
+    wsRef.current.onopen = () => {
+      console.log('WebSocket连接已建立');
+      setWsConnected(true);
+      setError('');
+    };
+
+    // 连接关闭处理
+    wsRef.current.onclose = () => {
+      console.log('WebSocket连接已关闭');
+      setWsConnected(false);
+    };
+
+    // 错误处理
+    wsRef.current.onerror = (error) => {
+      console.error('WebSocket错误:', error);
+      setError('WebSocket连接错误');
+      setWsConnected(false);
+    };
+
+    // 消息接收处理
+    wsRef.current.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('WebSocket收到消息:', data);
+        
+        // 根据消息类型更新状态
+        if (data.role) {
+          // 是聊天消息，添加到消息列表
+          setMessages(prev => [...prev, data]);
+          setLoading(false);
+        } else if (data.error) {
+          // 是错误消息
+          setError(data.error);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('解析WebSocket消息失败:', err);
+        setError('消息解析错误');
+        setLoading(false);
+      }
+    };
+
+    // 组件卸载时关闭WebSocket连接
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, []);
   
   // 自动滚动到底部的效果
   useEffect(() => {
@@ -195,7 +260,7 @@ function App() {
   }, [messages, loading]);
 
   // 表单提交处理函数
-  async function submit(e) {
+  function submit(e) {
     e.preventDefault(); // 阻止表单默认提交行为
     if (!prompt.trim()) return; // 防止空消息
     
@@ -213,32 +278,14 @@ function App() {
     setPrompt(''); // 清空输入框
     setLoading(true); // 设置加载状态为true
     
-    try {
-      // 根据环境自动选择API地址
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-      // 发送POST请求到Go网关服务的LLM接口
-      const res = await fetch(`${apiUrl}/api/llm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }, // 设置请求头
-        body: JSON.stringify({ prompt: currentPrompt }) // 发送JSON格式的请求体
-      });
-      const data = await res.json(); // 解析响应
-      
-      if (data.error) {
-        setError(data.error); // 处理错误信息
-      } else if (data.reply) {
-        // 将助手回复添加到聊天记录
-        const assistantMessage = {
-          id: Date.now() + 1,
-          role: 'assistant',
-          content: data.reply
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-      }
-    } catch {
-      setError('请求失败'); // 处理网络错误
-    } finally {
-      setLoading(false); // 无论请求成功或失败，都设置加载状态为false
+    // 通过WebSocket发送消息
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      // 发送用户消息到WebSocket服务器
+      wsRef.current.send(JSON.stringify({ prompt: currentPrompt }));
+    } else {
+      // WebSocket未连接，显示错误
+      setError('WebSocket未连接，请刷新页面重试');
+      setLoading(false);
     }
   }
 
@@ -278,6 +325,9 @@ function App() {
         <div className="chat-header">
           <h1>Soulbit</h1> {/* 页面标题 */}
           <div className="chat-status">{hello}</div> {/* 服务状态 */}
+          <div className={`connection-status ${wsConnected ? 'connected' : 'disconnected'}`}>
+            {wsConnected ? '实时连接' : '连接断开'}
+          </div>
         </div>
         
         {/* 聊天记录区域 */}
@@ -325,6 +375,13 @@ function App() {
             <textarea 
               value={prompt} 
               onChange={e => setPrompt(e.target.value)} // 输入框变化事件
+              onKeyDown={(e) => {
+                // 按回车键且不按Shift键时发送消息
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault(); // 阻止默认的换行行为
+                  submit(e); // 调用提交函数
+                }
+              }}
               placeholder="输入您的问题或想法..." 
               rows={3}
             />

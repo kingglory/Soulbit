@@ -114,6 +114,56 @@ body {
   margin-top: 4px;
 }
 
+/* WebSocket连接状态指示器 */
+.connection-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.connection-status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.connection-status.connected {
+  color: #10b981;
+  background-color: #d1fae5;
+}
+
+.connection-status.connected::before {
+  background-color: #10b981;
+}
+
+.connection-status.disconnected {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.connection-status.disconnected::before {
+  background-color: #ef4444;
+}
+
+/* 脉冲动画效果 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
 /* 聊天记录区域 - 显示所有聊天消息 */
 .chat-messages {
   /* flex比例：占聊天主内容区域的剩余空间 */
