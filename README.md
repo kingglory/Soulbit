@@ -6,7 +6,12 @@
 
 ![Soulbit项目界面](docs/main_image.jpg)
 
-项目前端界面展示，包含聊天功能和日历功能
+项目前端界面展示，包含：
+- **聊天功能**：与LLM服务的实时WebSocket通信，支持多轮对话
+- **日历功能**：显示阳历/农历日期，提供传统宜忌信息查询
+- **设置页面**：主题切换、语言选择、通知设置和API配置
+- **多语言支持**：简体中文、繁体中文、英文三种语言
+- **响应式设计**：适配不同屏幕尺寸的设备
 
 ## 目录结构
 - `apps/web`：React前端，基于Vite构建
@@ -16,12 +21,12 @@
 
 ## 快速开始（本地不使用 Docker）
 - Python 服务：
-  - 方式一（推荐）：在 pyllm 目录下运行
+  - 方式一：在 pyllm 目录下运行
     - `cd services/pyllm`
     - `python -m venv .venv && .venv\Scripts\activate`
     - `pip install -r requirements.txt`
-    - `uvicorn main:app --port 8000 --reload`
-  - 方式二：从项目根目录运行
+    - `uvicorn main:app --port 8000 --reload`  # 注意：可能会出现相对导入问题
+  - 方式二（推荐）：从项目根目录运行
     - `python -m venv .venv && .venv\Scripts\activate`
     - `pip install -r services/pyllm/requirements.txt`
     - `uvicorn services.pyllm.main:app --port 8000 --reload`
@@ -64,11 +69,12 @@
 
 ## 技术学习路线（简要）
 - 阶段 0：跑通最小骨架（已完成）
-- 阶段 1：React 基础与组件化（输入、请求、加载/错误态）
-- 阶段 2：Go 网关巩固（中间件、统一错误结构）
-- 阶段 3：Python 服务与持久化（查询接口与 DAO）
-- 阶段 4：数据库升级（可选，Postgres）
-- 阶段 5：LLM 能力演进（直连云模型、上下文）
+- 阶段 1：React 基础与组件化（输入、请求、加载/错误态）（已完成）
+- 阶段 2：Go 网关巩固（中间件、统一错误结构）（已完成）
+- 阶段 3：Python 服务与持久化（查询接口与 DAO）（已完成）
+- 阶段 4：前端功能扩展（多页面应用、WebSocket、多语言支持）（已完成）
+- 阶段 5：数据库升级（可选，Postgres）
+- 阶段 6：LLM 能力演进（直连云模型、上下文、多Agent工作流）（已完成）
 
 ## 注意事项
 - 端口：前端 `5173`（Vite默认），网关 `8080`，Python `8000`

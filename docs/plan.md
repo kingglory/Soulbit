@@ -11,14 +11,14 @@
 - 数据库：本地 `SQLite`（Python 侧简单持久化，后续可升级 Postgres）
 
 ## 当前进度
-- 前端入口：`apps/web/index.html:26` 通过 `fetch` 请求网关 `GET /api/hello` 与 `POST /api/llm`。
+- 前端：已实现多页面应用（聊天、日历、设置），支持WebSocket实时通信、多语言切换（简中/繁中/英文）、深色/浅色主题切换、响应式设计。
 - Go 网关：`services/gateway/main.go:66` 提供 `/api/hello`（测试用）与 `/api/llm`（转发到 Python），含基础 CORS。
 - Python 服务：`services/pyllm/main.py:42` 提供 `/llm`（基于多Agent工作流生成回复并写入 SQLite，支持ModelScope和OpenAI模型）与 `/health`。
-- 依赖文件：`services/pyllm/requirements.txt`，包含 `fastapi/uvicorn/pydantic/openai`。
+- 依赖文件：`services/pyllm/requirements.txt`，包含 `fastapi/uvicorn/pydantic/openai`；前端新增 `react-router-dom` 等依赖支持多页面功能。
 
 ## 阶段计划
 
-### 阶段 0：跑通最小骨架
+### 阶段 0：跑通最小骨架（已完成）
 - 目标：理解架构，打通链路，不做复杂特性。
 - 完成标准：浏览器能显示“Hello from Go”，输入提示词后得到“Echo: xxx”。
 - 验证：
@@ -26,26 +26,31 @@
   - Go：`GET http://localhost:8080/api/hello` 返回 `{"message":"Hello from Go"}`（`services/gateway/main.go:36`）。
   - 前端：`apps/web/index.html:50` 显示表单和回复。
 
-### 阶段 1：React 基础与组件化
+### 阶段 1：React 基础与组件化（已完成）
 - 学习要点：`useState/useEffect`、受控输入框、`fetch`、加载与错误态。
 - 实践：把 `App` 拆分为输入区与结果区组件，增加加载和错误提示。
 - 完成标准：输入、发送、等待、显示结果的体验完整且代码清晰。
 
-### 阶段 2：Go 网关巩固
+### 阶段 2：Go 网关巩固（已完成）
 - 学习要点：`net/http`、中间件（CORS、日志）、统一错误响应。
 - 实践：在 `/api/llm` 增加输入校验与一致的错误结构。
 - 完成标准：所有响应为 `application/json`，错误格式统一，转发健壮。
 
-### 阶段 3：Python 服务与持久化
+### 阶段 3：Python 服务与持久化（已完成）
 - 学习要点：FastAPI 路由/模型/响应，SQLite 简单持久化，查询接口。
 - 实践：新增 `GET /messages?limit=20` 查询最近消息；抽象数据访问层。
 - 完成标准：能查看历史消息；表结构与迁移脚本（简易版）明确。
 
-### 阶段 4：数据库升级（可选）
+### 阶段 4：前端功能扩展（已完成）
+- 学习要点：React Router 多页面路由、WebSocket 实时通信、多语言国际化、响应式设计、主题切换。
+- 实践：实现聊天、日历、设置三个页面，支持多语言切换（简中/繁中/英文）、深色/浅色主题切换、WebSocket 实时通信。
+- 完成标准：多页面切换流畅，聊天消息实时更新，主题和语言切换生效，适配不同屏幕尺寸。
+
+### 阶段 5：数据库升级（可选）
 - 本地演示用 `SQLite`；后续升级到 `Postgres`。
 - 切换策略：先抽象 DAO 层，避免业务直接依赖具体库。
 
-### 阶段 5：LLM 能力演进（可选）
+### 阶段 6：LLM 能力演进（已完成）
 - 路线：回声 → 云模型直连（OpenAI/ModelScope） → 多Agent工作流（决策Agent+专业Agent） → 简单上下文记忆 → 历史拼接 → 可配置模型参数（温度/系统提示）。
 - 安全：使用环境变量 `OPENAI_API_KEY` 或 `MODELSCOPE_API_KEY`，不要把密钥写入仓库。
 
@@ -76,12 +81,12 @@
 - 日志与错误：先用简单 `log.Println`（Go）与统一 JSON 错误结构，避免混乱输出。
 
 ## 下一步
-- 完成阶段 1：优化前端组件结构，增加加载/错误态与简单输入校验。
-- 完成阶段 2：在网关实现统一错误响应与输入校验，补充基础日志。
-- 完成阶段 3：实现消息查询接口与 DAO 层，巩固持久化能力。
+- 回顾复习巩固当前成果：深入理解已实现功能的代码逻辑，优化现有代码结构。
+- 开发页面小游戏：在前端添加一个简单的页面游戏功能，增强用户体验。
+- 优化前端性能，完善交互细节。
 
 ---
-最后更新：初始版本（已打通最小链路，等待阶段 1~3 的细化实现与验证）。
+最后更新：2026-01-03（已完成阶段 0~4 和阶段 6，实现了前端多页面应用、WebSocket 通信、多语言支持和 LLM 能力演进）。下一阶段计划调整为回顾巩固现有成果并开发页面小游戏。
 
 ## Docker 一键部署
 - 前置：安装 Docker 与 Docker Compose

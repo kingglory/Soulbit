@@ -4,10 +4,37 @@ import { createContext, useContext, useState, useEffect } from 'react';
 // 创建翻译文本对象，包含所有支持的语言
 const translations = {
   'zh-CN': {
-    // 导航栏文本
-    'nav.chat': '聊天',
-    'nav.calendar': '日历',
-    'nav.settings': '设置',
+        // 导航栏文本
+        'nav.chat': '聊天',
+        'nav.calendar': '日历',
+        'nav.game': '游戏',
+        'nav.settings': '设置',
+        // 游戏页面文本
+        'game.title': 'AI算命小游戏',
+        'game.description': '结合中国传统命理文化与现代AI技术的互动小游戏',
+        'game.fiveElements': '五行匹配游戏',
+        'game.fiveElementsDesc': '测试你对五行相生相克的了解程度',
+        'game.fortuneTelling': 'AI算命',
+        'game.fortuneTellingDesc': '获取个性化的命理解读',
+        'game.startGame': '开始游戏',
+        'game.back': '返回',
+        'game.score': '得分',
+        'game.time': '时间',
+        'game.round': '回合',
+        'game.whatGenerates': '{{element}}生什么？',
+        'game.whatConquers': '{{element}}克什么？',
+        'game.correct': '回答正确！',
+        'game.incorrect': '回答错误！',
+        'game.gameOver': '游戏结束',
+        'game.finalScore': '最终得分',
+        'game.timeRemaining': '剩余时间',
+        'game.correctAnswers': '正确答案',
+        'game.seconds': '秒',
+        'game.playAgain': '再玩一次',
+        'game.backToMenu': '返回菜单',
+        'game.analysisExample1': '根据你的游戏表现，你具有较强的逻辑思维能力。',
+        'game.analysisExample2': '你的决策速度较快，属于果断型性格。',
+        'game.analysisExample3': '建议你在生活中保持这种积极的态度，相信会有更好的运气。',
     // 设置页面文本
     'settings.title': '设置',
     'settings.theme': '主题',
@@ -59,10 +86,37 @@ const translations = {
     'calendar.day.6': '六',
   },
   'zh-TW': {
-    // 导航栏文本
-    'nav.chat': '聊天',
-    'nav.calendar': '日曆',
-    'nav.settings': '設置',
+        // 导航栏文本
+        'nav.chat': '聊天',
+        'nav.calendar': '日曆',
+        'nav.game': '遊戲',
+        'nav.settings': '設置',
+        // 游戏页面文本
+        'game.title': 'AI算命小遊戲',
+        'game.description': '結合中國傳統命理文化與現代AI技術的互動小遊戲',
+        'game.fiveElements': '五行匹配遊戲',
+        'game.fiveElementsDesc': '測試你對五行相生相克的了解程度',
+        'game.fortuneTelling': 'AI算命',
+        'game.fortuneTellingDesc': '獲取個性化的命理解讀',
+        'game.startGame': '開始遊戲',
+        'game.back': '返回',
+        'game.score': '得分',
+        'game.time': '時間',
+        'game.round': '回合',
+        'game.whatGenerates': '{{element}}生什麼？',
+        'game.whatConquers': '{{element}}克什麼？',
+        'game.correct': '回答正確！',
+        'game.incorrect': '回答錯誤！',
+        'game.gameOver': '遊戲結束',
+        'game.finalScore': '最終得分',
+        'game.timeRemaining': '剩餘時間',
+        'game.correctAnswers': '正確答案',
+        'game.seconds': '秒',
+        'game.playAgain': '再玩一次',
+        'game.backToMenu': '返回菜單',
+        'game.analysisExample1': '根據你的遊戲表現，你具有較強的邏輯思維能力。',
+        'game.analysisExample2': '你的決策速度較快，屬於果斷型性格。',
+        'game.analysisExample3': '建議你在生活中保持這種積極的態度，相信會有更好的運氣。',
     // 设置页面文本
     'settings.title': '設置',
     'settings.theme': '主題',
@@ -113,10 +167,37 @@ const translations = {
     'calendar.day.6': '六',
   },
   'en-US': {
-    // 导航栏文本
-    'nav.chat': 'Chat',
-    'nav.calendar': 'Calendar',
-    'nav.settings': 'Settings',
+        // 导航栏文本
+        'nav.chat': 'Chat',
+        'nav.calendar': 'Calendar',
+        'nav.game': 'Game',
+        'nav.settings': 'Settings',
+        // 游戏页面文本
+        'game.title': 'AI Fortune Telling Game',
+        'game.description': 'An interactive game combining traditional Chinese numerology culture with modern AI technology',
+        'game.fiveElements': 'Five Elements Matching Game',
+        'game.fiveElementsDesc': 'Test your knowledge of the Five Elements theory',
+        'game.fortuneTelling': 'AI Fortune Telling',
+        'game.fortuneTellingDesc': 'Get personalized numerology interpretation',
+        'game.startGame': 'Start Game',
+        'game.back': 'Back',
+        'game.score': 'Score',
+        'game.time': 'Time',
+        'game.round': 'Round',
+        'game.whatGenerates': 'What does {{element}} generate?',
+        'game.whatConquers': 'What does {{element}} conquer?',
+        'game.correct': 'Correct!',
+        'game.incorrect': 'Incorrect!',
+        'game.gameOver': 'Game Over',
+        'game.finalScore': 'Final Score',
+        'game.timeRemaining': 'Time Remaining',
+        'game.correctAnswers': 'Correct Answers',
+        'game.seconds': 'seconds',
+        'game.playAgain': 'Play Again',
+        'game.backToMenu': 'Back to Menu',
+        'game.analysisExample1': 'Based on your game performance, you have strong logical thinking skills.',
+        'game.analysisExample2': 'Your decision-making speed is fast, indicating a decisive personality.',
+        'game.analysisExample3': 'It is suggested that you maintain this positive attitude in life, which will bring you better luck.',
     // 设置页面文本
     'settings.title': 'Settings',
     'settings.theme': 'Theme',
@@ -176,10 +257,17 @@ export const LanguageProvider = ({ children }) => {
   // 从本地存储获取语言设置，如果没有则使用默认值'zh-CN'
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'zh-CN');
 
-  // 翻译函数，根据当前语言返回对应的翻译文本
-  const t = (key) => {
+  // 翻译函数，根据当前语言返回对应的翻译文本，支持模板变量替换
+  const t = (key, variables = {}) => {
     // 检查是否有当前语言的翻译，如果没有则返回键名
-    return translations[language]?.[key] || key;
+    let translation = translations[language]?.[key] || key;
+    
+    // 替换模板变量，格式：{{variable}} -> value
+    Object.entries(variables).forEach(([name, value]) => {
+      translation = translation.replace(new RegExp(`{{${name}}}`, 'g'), value);
+    });
+    
+    return translation;
   };
 
   // 切换语言的函数

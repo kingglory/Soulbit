@@ -20,6 +20,7 @@ function Navbar() {
   const navItems = [
     { path: '/', label: t('nav.chat') }, // 聊天页面导航项
     { path: '/calendar', label: t('nav.calendar') }, // 日历页面导航项
+    { path: '/game', label: t('nav.game') }, // 游戏页面导航项
     { path: '/settings', label: t('nav.settings') }, // 设置页面导航项
   ];
 

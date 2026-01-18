@@ -45,6 +45,34 @@ body { /* body元素选择器，设置页面整体样式 */
   flex-direction: column; /* 设置flex方向为垂直，使子元素垂直排列 */
 }
 
+/* 游戏页面容器样式 - 确保与其他页面一致 */
+.game-page { /* 游戏页面根容器 */
+  width: 100%; /* 宽度100% */
+  max-width: 100%; /* 与其他页面保持一致 */
+  flex: 1; /* 占满剩余空间 */
+  display: flex; /* 使用flex布局 */
+  flex-direction: column; /* 垂直排列 */
+}
+
+.game-content { /* 游戏页面主容器 */
+  padding: 24px; /* 与其他页面保持一致的内边距 */
+  flex: 1; /* 占满剩余空间 */
+  display: flex; /* 使用flex布局 */
+  flex-direction: column; /* 垂直排列 */
+}
+
+/* 游戏菜单和内容样式 */
+.game-menu, .five-elements-game { /* 游戏菜单和游戏内容容器 */
+  width: 100%; /* 宽度100% */
+  max-width: 800px; /* 最大宽度限制，与其他页面保持一致的视觉比例 */
+  margin: 0 auto; /* 居中显示 */
+  height: 100%; /* 高度100% */
+  display: flex; /* 使用flex布局 */
+  flex-direction: column; /* 垂直排列 */
+  justify-content: center; /* 垂直居中 */
+  align-items: center; /* 水平居中 */
+}
+
 /* 日历和设置页面的内容容器 */
 .calendar-content, .settings-content { /* 日历和设置页面的内容容器选择器 */
   padding: 24px; /* 设置内边距为24px，为内容提供留白 */
@@ -66,7 +94,7 @@ body { /* body元素选择器，设置页面整体样式 */
 /* 聊天容器样式 - 与其他页面容器保持一致 */
 .chat-container { /* 聊天容器选择器，控制聊天区域的样式 */
   flex: 1; /* 设置flex比例为1，与其他页面容器保持一致 */
-  padding: 0; /* 聊天容器不需要内边距，内部元素会处理 */
+  padding: 24px; /* 与其他页面保持一致的内边距 */
   overflow: hidden; /* 溢出处理：隐藏超出容器的内容 */
   display: flex; /* 内部布局：使用flexbox垂直排列聊天头部、消息区域和输入区域 */
   flex-direction: column; /* 设置flex方向为垂直，使子元素垂直排列 */

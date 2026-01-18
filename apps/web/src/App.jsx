@@ -11,6 +11,7 @@ import Navbar from './components/Navbar'
 import ChatPage from './pages/ChatPage' // 聊天页面组件，负责处理用户与智能助手的实时聊天
 import CalendarPage from './pages/CalendarPage' // 日历页面组件，提供日历视图和传统农历宜忌信息
 import SettingsPage from './pages/SettingsPage' // 设置页面组件，用于管理应用的各种设置选项
+import GamePage from './pages/GamePage' // 游戏页面组件，包含五行匹配游戏和AI算命功能
 
 // 导入全局样式文件，定义应用的基础样式和主题
 import './index.css'
@@ -45,6 +46,8 @@ function App() {
               <Route path="/calendar" element={<CalendarPage />} />
               {/* 设置页面路由，渲染设置页面组件 */}
               <Route path="/settings" element={<SettingsPage />} />
+              {/* 游戏页面路由，渲染游戏页面组件 */}
+              <Route path="/game" element={<GamePage />} />
             </Routes>
           </div>
         </div>
